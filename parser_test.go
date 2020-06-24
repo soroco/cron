@@ -381,9 +381,10 @@ func TestNormalizeFields_Errors(t *testing.T) {
 			actual, err := normalizeFields(test.input, test.options)
 			if err == nil {
 				t.Errorf("expected an error, got none. results: %v", actual)
-			}
-			if !strings.Contains(err.Error(), test.err) {
-				t.Errorf("expected error %q, got %q", test.err, err.Error())
+			} else {
+				if !strings.Contains(err.Error(), test.err) {
+					t.Errorf("expected error %q, got %q", test.err, err.Error())
+				}
 			}
 		})
 	}
@@ -494,15 +495,15 @@ func TestParseDowInNthWeekFormat(t *testing.T) {
 	}
 
 	for _, c := range entries {
-		dayOfWeek, weekNumber, lastWeek, ok := parseDowInNthWeekFormat(c.spec)
-		if dayOfWeek != c.dayOfWeek {
-			t.Errorf("%s => expected %v, got %v", c.spec, c.dayOfWeek, dayOfWeek)
+		dowExtra, ok := parseDowInNthWeekFormat(c.spec)
+		if dowExtra.DayOfWeek != c.dayOfWeek {
+			t.Errorf("%s => expected %v, got %v", c.spec, c.dayOfWeek, dowExtra.DayOfWeek)
 		}
-		if weekNumber != c.weekNumber {
-			t.Errorf("%s => expected %v, got %v", c.spec, c.weekNumber, weekNumber)
+		if dowExtra.WeekNumber != c.weekNumber {
+			t.Errorf("%s => expected %v, got %v", c.spec, c.weekNumber, dowExtra.WeekNumber)
 		}
-		if lastWeek != c.lastWeek {
-			t.Errorf("%s => expected %v, got %v", c.spec, c.lastWeek, lastWeek)
+		if dowExtra.LastWeek != c.lastWeek {
+			t.Errorf("%s => expected %v, got %v", c.spec, c.lastWeek, dowExtra.LastWeek)
 		}
 		if ok != c.ok {
 			t.Errorf("%s => expected %v, got %v", c.spec, c.ok, ok)

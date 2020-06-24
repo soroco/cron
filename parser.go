@@ -139,13 +139,11 @@ func (p Parser) Parse(spec string) (Schedule, error) {
 	if err != nil {
 		return nil, err
 	}
-	dayNum, weekNumInt, isLastWeek, ok := parseDowInNthWeekFormat(fields[5])
-	dayOfWeek := func() uint64 {
-		if ok {
-			return 0
-		}
-		return field(fields[5], dow)
-	}()
+	dowExtra, ok := parseDowInNthWeekFormat(fields[5])
+	var dayOfWeek uint64 = 0
+	if !ok {
+		dayOfWeek = field(fields[5], dow)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -158,49 +156,45 @@ func (p Parser) Parse(spec string) (Schedule, error) {
 		Month:    month,
 		Dow:      dayOfWeek,
 		Location: loc,
-		Extra: Extra{
-			DayOfWeek:  dayNum,
-			WeekNumber: weekNumInt,
-			LastWeek:   isLastWeek,
-			Valid:      ok,
-		},
+		Extra:    dowExtra,
 	}, nil
 }
 
 // parseDowInNthWeekFormat parse the dow spec of the cron spec
-// It returns dayOfTheWeek, occurrence or the week number in month, true if the week number is last week, ok
+// It returns the Extra struct that contains
+// dayOfTheWeek, occurrence or the week number in month and  a boolean for Last Week
 // For example:
-//	6#3 => 6, 3, false, true
-//	6#L => 6, 0, true, true
-//	XYZ => 0, 0, false, false
-//  8#9 => 0, 0, false, false
-func parseDowInNthWeekFormat(spec string) (uint8, uint8, bool, bool) {
+//	6#3 => Extra{6, 3, false, true}
+//	6#L => Extra{6, 0, true, true}
+//	XYZ => Extra{}
+//  8#9 => Extra{}
+func parseDowInNthWeekFormat(spec string) (Extra, bool) {
 	var dayOfWeek uint8 = 0
 	var weekNumber uint8 = 0
 	if len(spec) != 3 {
-		return 0, 0, false, false
+		return Extra{}, false
 	}
 	day := spec[0:1]
 	if day >= "0" && day <= "6" {
 		dayOfWeek = day[0] - '0'
 	} else {
-		return 0, 0, false, false
+		return Extra{}, false
 	}
 
 	shebang := spec[1:2]
 	if shebang != "#" {
-		return 0, 0, false, false
+		return Extra{}, false
 	}
 
 	week := spec[2:]
 	if week >= "1" && week <= "4" {
 		weekNumber = week[0] - '0'
 	} else if week == "L" {
-		return dayOfWeek, 0, true, true
+		return Extra{dayOfWeek, 0, true, true}, true
 	} else {
-		return 0, 0, false, false
+		return Extra{}, false
 	}
-	return dayOfWeek, weekNumber, false, true
+	return Extra{dayOfWeek, weekNumber, false, true}, true
 }
 
 // normalizeFields takes a subset set of the time fields and returns the full set
